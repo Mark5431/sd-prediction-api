@@ -57,7 +57,7 @@ device = torch.device('cuda:0' if USE_GPU and torch.cuda.is_available() else 'cp
 model = model_ft.to(device)
 
 # Load trained model
-model.load_state_dict(torch.load('skin_cancer_model (1).pth', map_location=device))
+model.load_state_dict(torch.load('skin_cancer_model (1).pth', map_location=device, weights_only=False))
 model.eval()
 
 # Image preprocessing
