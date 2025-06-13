@@ -47,16 +47,21 @@ def initialize_model(model_name, num_classes, feature_extract, use_pretrained=Tr
     model_ft = None
     input_size = 0
     if model_name == "mobilenet":
-        model_ft = models.mobilenet_v2(pretrained=True)
+        model_ft = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.DEFAULT if use_pretrained else None)
         set_parameter_requires_grad(model_ft, feature_extract)
         input_size = 224
         model_ft.classifier[1] = nn.Linear(model_ft.last_channel, num_classes)
+    elif model_name == "resnet50":
+        model_ft = models.resnet50(weights=models.ResNet50_Weights.DEFAULT if use_pretrained else None)
+        set_parameter_requires_grad(model_ft, feature_extract)
+        input_size = 224
+        model_ft.fc = nn.Linear(model_ft.fc.in_features, num_classes)
     else:
         raise ValueError("Invalid model name")
     return model_ft, input_size
 
 # Init model
-model_name = "mobilenet"
+model_name = "resnet50"  # Change to "mobilenet" or "resnet50" as needed
 num_classes = 7
 feature_extract = False
 model_ft, input_size = initialize_model(model_name, num_classes, feature_extract, use_pretrained=True)
@@ -67,7 +72,7 @@ device = torch.device('cuda:0' if USE_GPU and torch.cuda.is_available() else 'cp
 model = model_ft.to(device)
 
 # Load trained model
-model.load_state_dict(torch.load('skin_cancer_model (1).pth', map_location=device, weights_only=False))
+model = torch.load('skin_cancer_model (1).pth', map_location=device, weights_only=False)
 model.eval()
 
 # Image preprocessing
@@ -83,7 +88,14 @@ test_transform = transforms.Compose([
 gradients = []
 activations = []
 
-target_layer = model.features[-1]
+# Set target layer for Grad-CAM based on model type
+if hasattr(model, 'features'):
+    target_layer = model.features[-1]  # MobileNetV2
+elif hasattr(model, 'layer4'):
+    target_layer = model.layer4        # ResNet50
+else:
+    raise AttributeError('Model does not have a supported target layer for Grad-CAM')
+
 def forward_hook(module, input, output):
     activations.append(output)
 def backward_hook(module, grad_input, grad_output):
