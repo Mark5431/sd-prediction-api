@@ -11,9 +11,19 @@ import os
 import io
 import matplotlib.pyplot as plt
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Add CORS middleware to allow all origins (for development)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Mapping
 lesion_type_dict = {
